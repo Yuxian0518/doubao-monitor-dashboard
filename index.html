@@ -98,7 +98,7 @@
         <div id="resultsSection" class="hidden">
             <div class="metrics-row">
                 <div class="metric-card">
-                    <div class="label">官网引用率</div>
+                    <div class="label">官网引用率（合计）</div>
                     <div class="value blue" id="citationRate">-</div>
                     <div class="sub">回答中直接引用官网链接</div>
                 </div>
@@ -116,6 +116,27 @@
                     <div class="label">监控问题数</div>
                     <div class="value" id="totalQuestions">-</div>
                     <div class="sub">本次监控</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🌐 各官网引用明细</h2>
+                <div class="metrics-row" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="metric-card">
+                        <div class="label">about.ads.microsoft.com/zh</div>
+                        <div class="value blue" id="siteZh" style="font-size:24px">-</div>
+                        <div class="sub">中文官网</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">about.ads.microsoft.com</div>
+                        <div class="value blue" id="siteAbout" style="font-size:24px">-</div>
+                        <div class="sub">全球官网</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">ads.microsoft.com</div>
+                        <div class="value blue" id="siteAds" style="font-size:24px">-</div>
+                        <div class="sub">广告平台</div>
+                    </div>
                 </div>
             </div>
 
@@ -285,6 +306,14 @@ Bing Ads 怎么注册？
         document.getElementById('mentionRate').textContent = (mentioned / total * 100).toFixed(1) + '%';
         document.getElementById('noneRate').textContent = (none / total * 100).toFixed(1) + '%';
         document.getElementById('totalQuestions').textContent = total;
+
+        // Per-site breakdown
+        const siteZh = results.filter(r => r.sites.some(s => s === 'about.ads.microsoft.com/zh')).length;
+        const siteAbout = results.filter(r => r.sites.some(s => s === 'about.ads.microsoft.com' && s !== 'about.ads.microsoft.com/zh')).length;
+        const siteAds = results.filter(r => r.sites.some(s => s === 'ads.microsoft.com')).length;
+        document.getElementById('siteZh').textContent = `${siteZh}/${total}`;
+        document.getElementById('siteAbout').textContent = `${siteAbout}/${total}`;
+        document.getElementById('siteAds').textContent = `${siteAds}/${total}`;
 
         // Pie chart
         if (pieChart) pieChart.destroy();
