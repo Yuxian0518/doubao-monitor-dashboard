@@ -85,13 +85,18 @@
         <div class="target-info">
             <strong>监控目标：</strong>about.ads.microsoft.com/zh、about.ads.microsoft.com、ads.microsoft.com<br>
             <strong>竞品对比：</strong>Google Ads、百度推广、360 推广<br>
-            <strong>监控模型：</strong>豆包 Doubao-1.5-pro-32k（火山引擎）
+            <strong>监控模型：</strong>豆包 Doubao-1.5-pro-32k（支持联网/非联网切换）
         </div>
 
         <!-- Input Section -->
         <div class="card">
             <h2>📝 输入监控问题</h2>
             <p style="font-size:12px; color:#636e72; margin-bottom:12px;">每行一个问题。可在问题前加分类标签，格式：[分类] 问题。例如：[开户] 微软广告怎么开户？</p>
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600; margin-right:12px;">选择模型：</label>
+                <label style="font-size:13px; cursor:pointer; margin-right:16px;"><input type="radio" name="model" value="web" checked onchange="selectedModel='web'"> 🌐 豆包（联网搜索）<span style="font-size:11px;color:#636e72">— 更接近真实用户体验</span></label>
+                <label style="font-size:13px; cursor:pointer;"><input type="radio" name="model" value="standard" onchange="selectedModel='standard'"> 📚 豆包（非联网）<span style="font-size:11px;color:#636e72">— 基于训练数据</span></label>
+            </div>
             <div class="input-section">
                 <textarea id="questionsInput" placeholder="每行一个问题，例如：&#10;[开户] 微软广告怎么开户？&#10;[产品] 微软广告有哪些广告产品？&#10;[出海] 想做海外推广，必应广告怎么投？&#10;&#10;不加标签也可以，会自动分类。"></textarea>
                 <div class="file-upload">
@@ -260,6 +265,13 @@
     const API_KEY = 'ark-7c34b4c4-259c-45cc-a51f-ba6c883db398-95223';
     const BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';
     const MODEL_ID = 'ep-20260601121851-cwk6r';
+    const BOT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3/bots';
+    const BOT_ID = 'bot-20260601162708-j5xcg';
+    const MODELS = {
+        'standard': { name: '豆包（非联网）', url: BASE_URL, model: MODEL_ID },
+        'web': { name: '豆包（联网搜索）', url: BOT_BASE_URL, model: BOT_ID }
+    };
+    let selectedModel = 'web';
     const TARGET_SITES = ['about.ads.microsoft.com/zh', 'about.ads.microsoft.com', 'ads.microsoft.com'];
     const TARGET_KEYWORDS = ['Microsoft Advertising', '微软广告', '必应广告', 'Bing Ads', 'Microsoft 广告'];
     const COMPETITOR_KEYWORDS = {
@@ -332,10 +344,11 @@
     }
 
     async function callDoubao(question) {
-        const response = await fetch(`${BASE_URL}/chat/completions`, {
+        const config = MODELS[selectedModel];
+        const response = await fetch(`${config.url}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
-            body: JSON.stringify({ model: MODEL_ID, messages: [{ role: 'user', content: question }], temperature: 0.7 })
+            body: JSON.stringify({ model: config.model, messages: [{ role: 'user', content: question }], temperature: 0.7 })
         });
         const data = await response.json();
         if (data.choices && data.choices[0]) return data.choices[0].message.content;
