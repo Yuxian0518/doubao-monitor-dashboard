@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>豆包引用监控 Dashboard - Microsoft Advertising</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f5f6fa; color: #2d3436; }
@@ -100,8 +102,8 @@
             <div class="input-section">
                 <textarea id="questionsInput" placeholder="每行一个问题，例如：&#10;[开户] 微软广告怎么开户？&#10;[产品] 微软广告有哪些广告产品？&#10;[出海] 想做海外推广，必应广告怎么投？&#10;&#10;不加标签也可以，会自动分类。"></textarea>
                 <div class="file-upload">
-                    <label for="fileInput">📄 导入 TXT/CSV 文件</label>
-                    <input type="file" id="fileInput" accept=".txt,.csv">
+                    <label for="fileInput">📄 导入文件（支持 TXT / CSV / Excel / Word）</label>
+                    <input type="file" id="fileInput" accept=".txt,.csv,.xlsx,.xls,.docx">
                 </div>
                 <div style="margin-top: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <button class="btn btn-primary" id="runBtn" onclick="runMonitor()">▶ 开始监控</button>
@@ -308,9 +310,41 @@
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(ev) { document.getElementById('questionsInput').value = ev.target.result; updateCostEstimate(); };
-        reader.readAsText(file);
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (ext === 'xlsx' || ext === 'xls') {
+            // Excel file
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const workbook = XLSX.read(ev.target.result, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                // Extract all non-empty cells from first column (or all columns)
+                const questions = data.flat().filter(cell => cell && String(cell).trim().length > 0).map(cell => String(cell).trim());
+                document.getElementById('questionsInput').value = questions.join('\n');
+                updateCostEstimate();
+            };
+            reader.readAsArrayBuffer(file);
+        } else if (ext === 'docx') {
+            // Word file
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                mammoth.extractRawText({ arrayBuffer: ev.target.result }).then(function(result) {
+                    const lines = result.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    document.getElementById('questionsInput').value = lines.join('\n');
+                    updateCostEstimate();
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            // TXT/CSV
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('questionsInput').value = ev.target.result;
+                updateCostEstimate();
+            };
+            reader.readAsText(file);
+        }
     });
     document.getElementById('questionsInput').addEventListener('input', updateCostEstimate);
 
