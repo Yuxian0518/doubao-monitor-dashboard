@@ -31,9 +31,9 @@
         .badge.cited { background: #d4edda; color: #155724; }
         .badge.mentioned { background: #fff3cd; color: #856404; }
         .badge.none { background: #f8d7da; color: #721c24; }
+        .badge.category { background: #e8f4fd; color: #0078d4; font-size: 10px; margin-right: 4px; }
         .chart-container { position: relative; height: 280px; }
         .target-info { background: #f0f7ff; border-left: 4px solid #0078d4; padding: 12px 16px; margin-bottom: 24px; border-radius: 0 8px 8px 0; font-size: 13px; }
-        .input-section { margin-bottom: 24px; }
         .input-section textarea { width: 100%; height: 150px; padding: 12px; border: 1px solid #dfe6e9; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; }
         .input-section textarea:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 3px rgba(0,120,212,0.1); }
         .btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
@@ -50,16 +50,30 @@
         .file-upload label { display: inline-block; padding: 8px 16px; background: #f1f2f6; border-radius: 6px; cursor: pointer; font-size: 13px; }
         .file-upload label:hover { background: #dfe6e9; }
         .file-upload input { display: none; }
-        .legend { display: flex; gap: 16px; margin-bottom: 16px; }
+        .legend { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
         .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .answer-preview { max-width: 400px; font-size: 12px; color: #636e72; line-height: 1.5; }
-        .tabs { display: flex; gap: 0; margin-bottom: 24px; }
-        .tab { padding: 10px 20px; border: 1px solid #dfe6e9; background: white; cursor: pointer; font-size: 13px; }
-        .tab:first-child { border-radius: 8px 0 0 8px; }
-        .tab:last-child { border-radius: 0 8px 8px 0; }
-        .tab.active { background: #0078d4; color: white; border-color: #0078d4; }
-        @media (max-width: 768px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } .container { padding: 16px; } }
+        .answer-preview { max-width: 350px; font-size: 12px; color: #636e72; line-height: 1.5; }
+        .competitor-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+        .competitor-card { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
+        .competitor-card .name { font-size: 11px; color: #636e72; margin-bottom: 4px; }
+        .competitor-card .rate { font-size: 20px; font-weight: 700; }
+        .category-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+        .category-card { background: #f8f9fa; border-radius: 8px; padding: 12px; }
+        .category-card .cat-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .category-card .cat-rate { font-size: 18px; font-weight: 700; color: #0078d4; }
+        .category-card .cat-detail { font-size: 11px; color: #b2bec3; }
+        .trend-empty { text-align: center; color: #b2bec3; padding: 40px; font-size: 13px; }
+        .sentiment-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 4px; }
+        .sentiment-badge.positive { background: #d4edda; color: #155724; }
+        .sentiment-badge.neutral { background: #f1f2f6; color: #636e72; }
+        .sentiment-badge.negative { background: #f8d7da; color: #721c24; }
+        .rank-num { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 50%; font-size: 10px; font-weight: 700; }
+        .rank-1 { background: #ffd700; color: #333; }
+        .rank-2 { background: #c0c0c0; color: #333; }
+        .rank-3 { background: #cd7f32; color: white; }
+        .rank-other { background: #f1f2f6; color: #636e72; }
+        @media (max-width: 768px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } .container { padding: 16px; } .competitor-row { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
@@ -70,22 +84,24 @@
     <div class="container">
         <div class="target-info">
             <strong>监控目标：</strong>about.ads.microsoft.com/zh、about.ads.microsoft.com、ads.microsoft.com<br>
+            <strong>竞品对比：</strong>Google Ads、百度推广、360 推广<br>
             <strong>监控模型：</strong>豆包 Doubao-1.5-pro-32k（火山引擎）
         </div>
 
         <!-- Input Section -->
         <div class="card">
             <h2>📝 输入监控问题</h2>
+            <p style="font-size:12px; color:#636e72; margin-bottom:12px;">每行一个问题。可在问题前加分类标签，格式：[分类] 问题。例如：[开户] 微软广告怎么开户？</p>
             <div class="input-section">
-                <textarea id="questionsInput" placeholder="每行一个问题，例如：&#10;微软广告怎么开户？&#10;必应推广效果怎么样？&#10;必应广告和百度广告哪个好？"></textarea>
+                <textarea id="questionsInput" placeholder="每行一个问题，例如：&#10;[开户] 微软广告怎么开户？&#10;[产品] 微软广告有哪些广告产品？&#10;[出海] 想做海外推广，必应广告怎么投？&#10;&#10;不加标签也可以，会自动分类。"></textarea>
                 <div class="file-upload">
-                    <label for="fileInput">📄 或导入 TXT/CSV 文件</label>
+                    <label for="fileInput">📄 导入 TXT/CSV 文件</label>
                     <input type="file" id="fileInput" accept=".txt,.csv">
                 </div>
-                <div style="margin-top: 16px; display: flex; align-items: center;">
+                <div style="margin-top: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <button class="btn btn-primary" id="runBtn" onclick="runMonitor()">▶ 开始监控</button>
                     <button class="btn btn-secondary" onclick="loadExample()">载入示例问题</button>
-                    <span style="margin-left: 16px; font-size: 12px; color: #b2bec3;" id="costEstimate"></span>
+                    <span style="margin-left: 8px; font-size: 12px; color: #b2bec3;" id="costEstimate"></span>
                 </div>
             </div>
             <div id="progressSection" class="hidden">
@@ -96,9 +112,10 @@
 
         <!-- Results Section -->
         <div id="resultsSection" class="hidden">
+            <!-- Overview Metrics -->
             <div class="metrics-row">
                 <div class="metric-card">
-                    <div class="label">官网引用率（合计）</div>
+                    <div class="label">官网引用率</div>
                     <div class="value blue" id="citationRate">-</div>
                     <div class="sub">回答中直接引用官网链接</div>
                 </div>
@@ -119,6 +136,7 @@
                 </div>
             </div>
 
+            <!-- Per-site breakdown -->
             <div class="card">
                 <h2>🌐 各官网引用明细</h2>
                 <div class="metrics-row" style="grid-template-columns: repeat(3, 1fr);">
@@ -140,6 +158,58 @@
                 </div>
             </div>
 
+            <!-- Competitor Comparison -->
+            <div class="card">
+                <h2>⚔️ 竞品引用对比</h2>
+                <p style="font-size:12px; color:#636e72; margin-bottom:8px;">同样的问题中，各平台被引用/提及的次数</p>
+                <div class="competitor-row" id="competitorRow">
+                    <div class="competitor-card">
+                        <div class="name">Microsoft Advertising</div>
+                        <div class="rate blue" id="compMsft">-</div>
+                    </div>
+                    <div class="competitor-card">
+                        <div class="name">Google Ads</div>
+                        <div class="rate" id="compGoogle" style="color:#ea4335">-</div>
+                    </div>
+                    <div class="competitor-card">
+                        <div class="name">百度推广</div>
+                        <div class="rate" id="compBaidu" style="color:#306cff">-</div>
+                    </div>
+                    <div class="competitor-card">
+                        <div class="name">360 推广</div>
+                        <div class="rate" id="comp360" style="color:#00b850">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="card">
+                <h2>📂 分类引用率</h2>
+                <p style="font-size:12px; color:#636e72; margin-bottom:8px;">按问题类型查看哪些场景引用率最低→优先优化</p>
+                <div class="category-summary" id="categorySummary"></div>
+            </div>
+
+            <!-- Sentiment & Ranking -->
+            <div class="card">
+                <h2>🎯 语义分析</h2>
+                <p style="font-size:12px; color:#636e72; margin-bottom:8px;">微软广告在回答中的推荐位置和态度</p>
+                <div class="metrics-row" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="metric-card">
+                        <div class="label">主推（首位推荐）</div>
+                        <div class="value green" id="sentPrimary" style="font-size:24px">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">并列提及</div>
+                        <div class="value orange" id="sentSecondary" style="font-size:24px">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">顺带一提</div>
+                        <div class="value" id="sentMinor" style="font-size:24px; color:#b2bec3">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
             <div class="card">
                 <h2>📊 引用分布</h2>
                 <div class="chart-container">
@@ -147,19 +217,30 @@
                 </div>
             </div>
 
+            <!-- Trend -->
+            <div class="card">
+                <h2>📈 历史趋势</h2>
+                <div id="trendContent">
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Detailed Results -->
             <div class="card">
                 <h2>📋 详细结果</h2>
                 <div class="legend">
-                    <div class="legend-item"><div class="legend-dot" style="background:#155724"></div>引用了官网</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:#856404"></div>提及了品牌</div>
-                    <div class="legend-item"><div class="legend-dot" style="background:#721c24"></div>完全未提及</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#155724"></div>引用官网</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#856404"></div>提及品牌</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#721c24"></div>未提及</div>
                 </div>
                 <table class="results-table">
                     <thead>
                         <tr>
                             <th style="width:30px">#</th>
-                            <th style="width:280px">问题</th>
-                            <th style="width:80px">状态</th>
+                            <th style="width:60px">分类</th>
+                            <th style="width:240px">问题</th>
+                            <th style="width:60px">状态</th>
+                            <th style="width:60px">排名</th>
                             <th>引用/提及</th>
                             <th>回答摘要</th>
                         </tr>
@@ -168,8 +249,9 @@
                 </table>
             </div>
 
-            <div style="text-align: center; margin-top: 16px;">
+            <div style="text-align: center; margin-top: 16px; display: flex; justify-content: center; gap: 8px;">
                 <button class="btn btn-secondary" onclick="exportReport()">📥 导出报告</button>
+                <button class="btn btn-secondary" onclick="saveHistory()">💾 保存到历史</button>
             </div>
         </div>
     </div>
@@ -180,22 +262,31 @@
     const MODEL_ID = 'ep-20260601121851-cwk6r';
     const TARGET_SITES = ['about.ads.microsoft.com/zh', 'about.ads.microsoft.com', 'ads.microsoft.com'];
     const TARGET_KEYWORDS = ['Microsoft Advertising', '微软广告', '必应广告', 'Bing Ads', 'Microsoft 广告'];
+    const COMPETITOR_KEYWORDS = {
+        'Google Ads': ['Google Ads', 'Google 广告', 'google ads', 'AdWords', 'ads.google.com'],
+        '百度推广': ['百度推广', '百度广告', '百度竞价', 'e.baidu.com', '凤巢'],
+        '360 推广': ['360推广', '360广告', '360点睛', '点睛平台']
+    };
+    const CATEGORY_KEYWORDS = {
+        '开户': ['开户', '注册', '创建账户', '开通'],
+        '产品': ['广告类型', '广告产品', '什么是', '受众广告', '格式'],
+        '投放': ['投放', '怎么投', '流程', '出价', '预算'],
+        '出海': ['出海', '海外', '全球', '跨境', '独立站'],
+        '对比': ['对比', '比较', '哪个好', '优势', '区别'],
+        '资质': ['资质', '审核', '条件', '要求']
+    };
 
     let results = [];
     let pieChart = null;
+    let trendChart = null;
 
-    // File upload handler
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(ev) {
-            document.getElementById('questionsInput').value = ev.target.result;
-            updateCostEstimate();
-        };
+        reader.onload = function(ev) { document.getElementById('questionsInput').value = ev.target.result; updateCostEstimate(); };
         reader.readAsText(file);
     });
-
     document.getElementById('questionsInput').addEventListener('input', updateCostEstimate);
 
     function updateCostEstimate() {
@@ -204,88 +295,115 @@
         document.getElementById('costEstimate').textContent = questions.length > 0 ? `预计 ${questions.length} 个问题，约 ¥${cost}` : '';
     }
 
+    function parseQuestion(line) {
+        const match = line.match(/^\[([^\]]+)\]\s*(.+)$/);
+        if (match) return { category: match[1], question: match[2] };
+        return { category: autoCategory(line), question: line };
+    }
+
+    function autoCategory(q) {
+        for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+            if (keywords.some(k => q.includes(k))) return cat;
+        }
+        return '通用';
+    }
+
     function getQuestions() {
-        return document.getElementById('questionsInput').value
-            .split('\n')
-            .map(q => q.trim())
-            .filter(q => q.length > 0);
+        return document.getElementById('questionsInput').value.split('\n').map(q => q.trim()).filter(q => q.length > 0);
     }
 
     function loadExample() {
-        document.getElementById('questionsInput').value = `微软广告怎么开户？
-必应推广效果怎么样？
-必应广告和百度广告哪个好？
-Microsoft Advertising 是什么？
-想做海外推广，必应广告怎么投？
-微软广告有哪些广告产品？
-Bing Ads 怎么注册？
-必应搜索广告投放流程
-微软受众广告是什么？
-出海广告平台有哪些推荐？`;
+        document.getElementById('questionsInput').value = `[开户] 微软广告怎么开户？
+[产品] 必应推广效果怎么样？
+[对比] 必应广告和百度广告哪个好？
+[产品] Microsoft Advertising 是什么？
+[出海] 想做海外推广，必应广告怎么投？
+[产品] 微软广告有哪些广告产品？
+[开户] Bing Ads 怎么注册？
+[投放] 必应搜索广告投放流程
+[产品] 微软受众广告是什么？
+[出海] 出海广告平台有哪些推荐？
+[通用] 数字广告平台有哪些选择？
+[出海] 海外搜索广告怎么做？
+[投放] 微软广告的受众定向能力怎么样？
+[资质] 必应广告开户需要什么条件？
+[出海] 跨境电商广告投放渠道有哪些？`;
         updateCostEstimate();
     }
 
     async function callDoubao(question) {
         const response = await fetch(`${BASE_URL}/chat/completions`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
-            body: JSON.stringify({
-                model: MODEL_ID,
-                messages: [{ role: 'user', content: question }],
-                temperature: 0.7
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+            body: JSON.stringify({ model: MODEL_ID, messages: [{ role: 'user', content: question }], temperature: 0.7 })
         });
         const data = await response.json();
-        if (data.choices && data.choices[0]) {
-            return data.choices[0].message.content;
-        }
+        if (data.choices && data.choices[0]) return data.choices[0].message.content;
         throw new Error(data.error?.message || 'API 调用失败');
     }
 
-    function analyzeResponse(question, answer) {
+    function analyzeResponse(question, answer, category) {
         const sites = TARGET_SITES.filter(s => answer.toLowerCase().includes(s.toLowerCase()));
         const keywords = TARGET_KEYWORDS.filter(k => answer.toLowerCase().includes(k.toLowerCase()));
         const urlPattern = /https?:\/\/[^\s\)\]\}<>]+/g;
         const urls = answer.match(urlPattern) || [];
         const status = sites.length > 0 ? 'CITED' : (keywords.length > 0 ? 'MENTIONED' : 'NONE');
-        return { q: question, answer, sites, keywords, urls, status };
+
+        // Competitor analysis
+        const competitors = {};
+        for (const [comp, kws] of Object.entries(COMPETITOR_KEYWORDS)) {
+            competitors[comp] = kws.some(k => answer.toLowerCase().includes(k.toLowerCase()));
+        }
+
+        // Sentiment/ranking analysis
+        const ranking = analyzeRanking(answer);
+
+        return { q: question, answer, sites, keywords, urls, status, category, competitors, ranking };
+    }
+
+    function analyzeRanking(answer) {
+        const msftKeywords = ['Microsoft Advertising', '微软广告', '必应广告', 'Bing Ads'];
+        const lowerAnswer = answer.toLowerCase();
+        const firstMention = Math.min(...msftKeywords.map(k => {
+            const idx = lowerAnswer.indexOf(k.toLowerCase());
+            return idx === -1 ? 99999 : idx;
+        }));
+
+        if (firstMention === 99999) return { position: 'none', label: '未提及' };
+
+        // Check if it's mentioned in first 20% of answer
+        const threshold20 = answer.length * 0.2;
+        const threshold50 = answer.length * 0.5;
+
+        if (firstMention < threshold20) return { position: 'primary', label: '主推' };
+        if (firstMention < threshold50) return { position: 'secondary', label: '并列' };
+        return { position: 'minor', label: '顺带' };
     }
 
     async function runMonitor() {
-        const questions = getQuestions();
-        if (questions.length === 0) {
-            alert('请输入至少一个问题');
-            return;
-        }
+        const rawQuestions = getQuestions();
+        if (rawQuestions.length === 0) { alert('请输入至少一个问题'); return; }
 
         const btn = document.getElementById('runBtn');
         btn.disabled = true;
         btn.textContent = '⏳ 监控中...';
-
         document.getElementById('progressSection').classList.remove('hidden');
         document.getElementById('resultsSection').classList.add('hidden');
         results = [];
 
-        for (let i = 0; i < questions.length; i++) {
-            const progress = ((i + 1) / questions.length * 100).toFixed(0);
-            document.getElementById('statusText').textContent = `[${i + 1}/${questions.length}] 正在提问: ${questions[i]}`;
+        for (let i = 0; i < rawQuestions.length; i++) {
+            const parsed = parseQuestion(rawQuestions[i]);
+            const progress = ((i + 1) / rawQuestions.length * 100).toFixed(0);
+            document.getElementById('statusText').textContent = `[${i + 1}/${rawQuestions.length}] ${parsed.question}`;
             document.getElementById('progressFill').style.width = progress + '%';
 
             try {
-                const answer = await callDoubao(questions[i]);
-                const analysis = analyzeResponse(questions[i], answer);
-                results.push(analysis);
+                const answer = await callDoubao(parsed.question);
+                results.push(analyzeResponse(parsed.question, answer, parsed.category));
             } catch (e) {
-                results.push({ q: questions[i], answer: '', sites: [], keywords: [], urls: [], status: 'ERROR', error: e.message });
+                results.push({ q: parsed.question, answer: '', sites: [], keywords: [], urls: [], status: 'ERROR', category: parsed.category, competitors: {}, ranking: { position: 'none', label: '错误' }, error: e.message });
             }
-
-            // Rate limiting
-            if (i < questions.length - 1) {
-                await new Promise(r => setTimeout(r, 1500));
-            }
+            if (i < rawQuestions.length - 1) await new Promise(r => setTimeout(r, 1500));
         }
 
         document.getElementById('progressSection').classList.add('hidden');
@@ -296,7 +414,6 @@ Bing Ads 怎么注册？
 
     function renderResults() {
         document.getElementById('resultsSection').classList.remove('hidden');
-
         const total = results.length;
         const cited = results.filter(r => r.status === 'CITED').length;
         const mentioned = results.filter(r => r.status === 'MENTIONED').length;
@@ -307,40 +424,119 @@ Bing Ads 怎么注册？
         document.getElementById('noneRate').textContent = (none / total * 100).toFixed(1) + '%';
         document.getElementById('totalQuestions').textContent = total;
 
-        // Per-site breakdown
-        const siteZh = results.filter(r => r.sites.some(s => s === 'about.ads.microsoft.com/zh')).length;
-        const siteAbout = results.filter(r => r.sites.some(s => s === 'about.ads.microsoft.com' && s !== 'about.ads.microsoft.com/zh')).length;
-        const siteAds = results.filter(r => r.sites.some(s => s === 'ads.microsoft.com')).length;
+        // Per-site
+        const siteZh = results.filter(r => r.sites.includes('about.ads.microsoft.com/zh')).length;
+        const siteAbout = results.filter(r => r.sites.includes('about.ads.microsoft.com')).length;
+        const siteAds = results.filter(r => r.sites.includes('ads.microsoft.com')).length;
         document.getElementById('siteZh').textContent = `${siteZh}/${total}`;
         document.getElementById('siteAbout').textContent = `${siteAbout}/${total}`;
         document.getElementById('siteAds').textContent = `${siteAds}/${total}`;
+
+        // Competitors
+        const msftCount = results.filter(r => r.status === 'CITED' || r.status === 'MENTIONED').length;
+        const googleCount = results.filter(r => r.competitors['Google Ads']).length;
+        const baiduCount = results.filter(r => r.competitors['百度推广']).length;
+        const count360 = results.filter(r => r.competitors['360 推广']).length;
+        document.getElementById('compMsft').textContent = `${msftCount}/${total}`;
+        document.getElementById('compGoogle').textContent = `${googleCount}/${total}`;
+        document.getElementById('compBaidu').textContent = `${baiduCount}/${total}`;
+        document.getElementById('comp360').textContent = `${count360}/${total}`;
+
+        // Category breakdown
+        const categories = {};
+        results.forEach(r => {
+            if (!categories[r.category]) categories[r.category] = { total: 0, cited: 0, mentioned: 0 };
+            categories[r.category].total++;
+            if (r.status === 'CITED') categories[r.category].cited++;
+            else if (r.status === 'MENTIONED') categories[r.category].mentioned++;
+        });
+        const catHtml = Object.entries(categories).map(([cat, data]) => {
+            const rate = ((data.cited + data.mentioned) / data.total * 100).toFixed(0);
+            return `<div class="category-card"><div class="cat-name">${cat}</div><div class="cat-rate">${rate}%</div><div class="cat-detail">引用${data.cited} 提及${data.mentioned} / 共${data.total}题</div></div>`;
+        }).join('');
+        document.getElementById('categorySummary').innerHTML = catHtml;
+
+        // Sentiment/ranking
+        const primary = results.filter(r => r.ranking.position === 'primary').length;
+        const secondary = results.filter(r => r.ranking.position === 'secondary').length;
+        const minor = results.filter(r => r.ranking.position === 'minor').length;
+        document.getElementById('sentPrimary').textContent = `${primary}/${total}`;
+        document.getElementById('sentSecondary').textContent = `${secondary}/${total}`;
+        document.getElementById('sentMinor').textContent = `${minor}/${total}`;
 
         // Pie chart
         if (pieChart) pieChart.destroy();
         pieChart = new Chart(document.getElementById('pieChart'), {
             type: 'doughnut',
-            data: {
-                labels: ['引用官网', '提及品牌', '未提及'],
-                datasets: [{ data: [cited, mentioned, none], backgroundColor: ['#0078d4', '#f39c12', '#d63031'], borderWidth: 0 }]
-            },
+            data: { labels: ['引用官网', '提及品牌', '未提及'], datasets: [{ data: [cited, mentioned, none], backgroundColor: ['#0078d4', '#f39c12', '#d63031'], borderWidth: 0 }] },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
+
+        // Trend chart
+        renderTrend();
 
         // Table
         const tbody = document.getElementById('resultsBody');
         tbody.innerHTML = '';
         results.forEach((r, i) => {
             const badgeClass = r.status === 'CITED' ? 'cited' : (r.status === 'MENTIONED' ? 'mentioned' : 'none');
-            const badgeText = r.status === 'CITED' ? '引用' : (r.status === 'MENTIONED' ? '提及' : (r.status === 'ERROR' ? '错误' : '未提及'));
+            const badgeText = r.status === 'CITED' ? '引用' : (r.status === 'MENTIONED' ? '提及' : '未提及');
             const detail = r.sites.length > 0 ? r.sites.join(', ') : (r.keywords.length > 0 ? r.keywords.join(', ') : (r.error || '-'));
-            const preview = r.answer ? r.answer.substring(0, 120) + '...' : '-';
+            const preview = r.answer ? r.answer.substring(0, 100) + '...' : '-';
+            const rankClass = r.ranking.position === 'primary' ? 'rank-1' : (r.ranking.position === 'secondary' ? 'rank-2' : (r.ranking.position === 'minor' ? 'rank-3' : 'rank-other'));
             tbody.innerHTML += `<tr>
                 <td>${i + 1}</td>
+                <td><span class="badge category">${r.category}</span></td>
                 <td>${r.q}</td>
                 <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                <td><span class="rank-num ${rankClass}">${r.ranking.label}</span></td>
                 <td style="font-size:12px">${detail}</td>
                 <td class="answer-preview">${preview}</td>
             </tr>`;
+        });
+    }
+
+    // History management
+    function getHistory() {
+        try { return JSON.parse(localStorage.getItem('doubao_monitor_history') || '[]'); }
+        catch { return []; }
+    }
+
+    function saveHistory() {
+        const history = getHistory();
+        const total = results.length;
+        const cited = results.filter(r => r.status === 'CITED').length;
+        const mentioned = results.filter(r => r.status === 'MENTIONED').length;
+        history.push({
+            date: new Date().toISOString().slice(0, 10),
+            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+            total, cited, mentioned,
+            citationRate: (cited / total * 100).toFixed(1),
+            mentionRate: (mentioned / total * 100).toFixed(1)
+        });
+        localStorage.setItem('doubao_monitor_history', JSON.stringify(history));
+        alert('✅ 已保存到历史记录');
+        renderTrend();
+    }
+
+    function renderTrend() {
+        const history = getHistory();
+        if (history.length === 0) {
+            document.getElementById('trendContent').innerHTML = '<div class="trend-empty">暂无历史数据。运行监控后点击「保存到历史」积累趋势数据。</div>';
+            return;
+        }
+        document.getElementById('trendContent').innerHTML = '<div class="chart-container"><canvas id="trendChart"></canvas></div>';
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: history.map(h => h.date),
+                datasets: [
+                    { label: '引用率%', data: history.map(h => h.citationRate), borderColor: '#0078d4', backgroundColor: 'rgba(0,120,212,0.1)', tension: 0.3, fill: true },
+                    { label: '提及率%', data: history.map(h => h.mentionRate), borderColor: '#f39c12', backgroundColor: 'rgba(243,156,18,0.1)', tension: 0.3, fill: true }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { position: 'bottom' } } }
         });
     }
 
@@ -348,32 +544,27 @@ Bing Ads 怎么注册？
         const total = results.length;
         const cited = results.filter(r => r.status === 'CITED').length;
         const mentioned = results.filter(r => r.status === 'MENTIONED').length;
-        const none = results.filter(r => r.status === 'NONE' || r.status === 'ERROR').length;
+        const none = total - cited - mentioned;
+        let report = `# 豆包引用监控报告\n\n**日期**: ${new Date().toLocaleString('zh-CN')}\n**模型**: 豆包 Doubao-1.5-pro-32k\n\n`;
+        report += `## 概览\n| 指标 | 数量 | 占比 |\n|------|------|------|\n| 引用官网 | ${cited} | ${(cited/total*100).toFixed(1)}% |\n| 提及品牌 | ${mentioned} | ${(mentioned/total*100).toFixed(1)}% |\n| 未提及 | ${none} | ${(none/total*100).toFixed(1)}% |\n\n`;
 
-        let report = `# 豆包引用监控报告\n\n`;
-        report += `**日期**: ${new Date().toLocaleString('zh-CN')}\n`;
-        report += `**模型**: 豆包 Doubao-1.5-pro-32k\n`;
-        report += `**目标网站**: about.ads.microsoft.com\n\n`;
-        report += `## 概览\n\n`;
-        report += `| 指标 | 数量 | 占比 |\n|------|------|------|\n`;
-        report += `| 引用官网 | ${cited} | ${(cited/total*100).toFixed(1)}% |\n`;
-        report += `| 提及品牌 | ${mentioned} | ${(mentioned/total*100).toFixed(1)}% |\n`;
-        report += `| 未提及 | ${none} | ${(none/total*100).toFixed(1)}% |\n\n`;
+        // Competitor section
+        const googleCount = results.filter(r => r.competitors['Google Ads']).length;
+        const baiduCount = results.filter(r => r.competitors['百度推广']).length;
+        report += `## 竞品对比\n| 平台 | 被提及次数 |\n|------|------|\n| Microsoft Advertising | ${cited + mentioned} |\n| Google Ads | ${googleCount} |\n| 百度推广 | ${baiduCount} |\n\n`;
+
         report += `## 详细结果\n\n`;
         results.forEach((r, i) => {
             const status = r.status === 'CITED' ? '✅引用' : (r.status === 'MENTIONED' ? '🟡提及' : '❌未提及');
-            report += `### ${i+1}. ${r.q}\n**状态**: ${status}\n`;
-            if (r.sites.length) report += `**引用**: ${r.sites.join(', ')}\n`;
-            if (r.keywords.length) report += `**关键词**: ${r.keywords.join(', ')}\n`;
-            report += `**回答**: ${r.answer ? r.answer.substring(0, 200) + '...' : '-'}\n\n`;
+            report += `### ${i+1}. [${r.category}] ${r.q}\n**状态**: ${status} | **位置**: ${r.ranking.label}\n`;
+            if (r.sites.length) report += `**引用网站**: ${r.sites.join(', ')}\n`;
+            report += `**回答摘要**: ${r.answer ? r.answer.substring(0, 200) + '...' : '-'}\n\n`;
         });
 
         const blob = new Blob([report], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `doubao_monitor_${new Date().toISOString().slice(0,10)}.md`;
-        a.click();
+        a.href = url; a.download = `doubao_monitor_${new Date().toISOString().slice(0,10)}.md`; a.click();
     }
     </script>
 </body>
