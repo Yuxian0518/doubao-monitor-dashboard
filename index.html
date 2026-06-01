@@ -216,6 +216,19 @@
 
             <!-- Charts -->
             <div class="card">
+                <h2>🔗 回答中引用的所有网站</h2>
+                <p style="font-size:12px; color:#636e72; margin-bottom:12px;">豆包回答中出现的所有链接统计——看流量都被引导到了哪里</p>
+                <div id="allLinksSection"></div>
+            </div>
+
+            <!-- Optimization Suggestions -->
+            <div class="card">
+                <h2>💡 GEO 优化建议</h2>
+                <p style="font-size:12px; color:#636e72; margin-bottom:12px;">基于监控结果自动生成的优化方向</p>
+                <div id="suggestionsSection"></div>
+            </div>
+
+            <div class="card">
                 <h2>📊 引用分布</h2>
                 <div class="chart-container">
                     <canvas id="pieChart"></canvas>
@@ -485,6 +498,12 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
 
+        // All links analysis
+        renderAllLinks();
+
+        // Optimization suggestions
+        renderSuggestions();
+
         // Trend chart
         renderTrend();
 
@@ -507,6 +526,150 @@
                 <td class="answer-preview">${preview}</td>
             </tr>`;
         });
+    }
+
+    // All links extraction and ranking
+    function renderAllLinks() {
+        const linkCounts = {};
+        results.forEach(r => {
+            const urls = r.urls || [];
+            urls.forEach(url => {
+                // Normalize URL to domain
+                try {
+                    const domain = url.replace(/https?:\/\//, '').split('/')[0].split('?')[0];
+                    linkCounts[domain] = (linkCounts[domain] || 0) + 1;
+                } catch(e) {}
+            });
+        });
+
+        const sorted = Object.entries(linkCounts).sort((a, b) => b[1] - a[1]);
+        const total = results.length;
+
+        if (sorted.length === 0) {
+            document.getElementById('allLinksSection').innerHTML = '<p style="color:#b2bec3; font-size:13px;">本次回答中未检测到任何链接</p>';
+            return;
+        }
+
+        const isTarget = (domain) => TARGET_SITES.some(s => domain.includes(s.replace('https://', '')));
+        const isCompetitor = (domain) => domain.includes('google') || domain.includes('baidu') || domain.includes('360');
+
+        let html = '<table class="results-table"><thead><tr><th>排名</th><th>网站域名</th><th>出现次数</th><th>占比</th><th>类型</th></tr></thead><tbody>';
+        sorted.forEach(([domain, count], i) => {
+            const pct = (count / total * 100).toFixed(1);
+            let typeLabel = '';
+            if (isTarget(domain)) typeLabel = '<span class="badge cited">我方官网</span>';
+            else if (isCompetitor(domain)) typeLabel = '<span class="badge none">竞品</span>';
+            else typeLabel = '<span class="badge mentioned">第三方</span>';
+            html += `<tr><td>${i + 1}</td><td style="font-size:12px">${domain}</td><td><strong>${count}</strong></td><td>${pct}%</td><td>${typeLabel}</td></tr>`;
+        });
+        html += '</tbody></table>';
+
+        // Summary stat
+        const msftLinks = sorted.filter(([d]) => isTarget(d)).reduce((s, [, c]) => s + c, 0);
+        const competitorLinks = sorted.filter(([d]) => isCompetitor(d)).reduce((s, [, c]) => s + c, 0);
+        const otherLinks = sorted.reduce((s, [, c]) => s + c, 0) - msftLinks - competitorLinks;
+
+        html = `<div class="metrics-row" style="grid-template-columns: repeat(3, 1fr); margin-bottom:16px;">
+            <div class="metric-card"><div class="label">我方官网链接</div><div class="value blue" style="font-size:24px">${msftLinks} 次</div></div>
+            <div class="metric-card"><div class="label">竞品链接</div><div class="value red" style="font-size:24px">${competitorLinks} 次</div></div>
+            <div class="metric-card"><div class="label">第三方链接</div><div class="value orange" style="font-size:24px">${otherLinks} 次</div></div>
+        </div>` + html;
+
+        document.getElementById('allLinksSection').innerHTML = html;
+    }
+
+    // Auto-generate optimization suggestions
+    function renderSuggestions() {
+        const total = results.length;
+        const cited = results.filter(r => r.status === 'CITED').length;
+        const mentioned = results.filter(r => r.status === 'MENTIONED').length;
+        const none = results.filter(r => r.status === 'NONE').length;
+        const suggestions = [];
+
+        // 1. Low citation rate
+        if (cited / total < 0.2) {
+            suggestions.push({
+                priority: '🔴 高优',
+                title: '官网引用率过低（' + (cited/total*100).toFixed(1) + '%）',
+                detail: '豆包很少直接引用你的官网链接。建议在官网添加结构化 FAQ 页面，使用 Schema.org FAQPage 标记，让 AI 更容易抓取和引用。'
+            });
+        }
+
+        // 2. Questions with NONE status
+        const noneQuestions = results.filter(r => r.status === 'NONE');
+        if (noneQuestions.length > 0) {
+            const qList = noneQuestions.slice(0, 5).map(r => `「${r.q}」`).join('、');
+            suggestions.push({
+                priority: '🔴 高优',
+                title: `${noneQuestions.length} 个问题完全未提及微软广告`,
+                detail: `这些问题用户问到时，豆包完全不会推荐你：${qList}。建议针对这些问题在官网创建对应内容页面，标题直接匹配用户搜索意图。`
+            });
+        }
+
+        // 3. Category with lowest rate
+        const categories = {};
+        results.forEach(r => {
+            if (!categories[r.category]) categories[r.category] = { total: 0, good: 0 };
+            categories[r.category].total++;
+            if (r.status === 'CITED' || r.status === 'MENTIONED') categories[r.category].good++;
+        });
+        const worstCat = Object.entries(categories).sort((a, b) => (a[1].good/a[1].total) - (b[1].good/b[1].total))[0];
+        if (worstCat && worstCat[1].good / worstCat[1].total < 0.5) {
+            suggestions.push({
+                priority: '🟡 中优',
+                title: `「${worstCat[0]}」类问题引用率最低（${(worstCat[1].good/worstCat[1].total*100).toFixed(0)}%）`,
+                detail: `建议在官网增加关于「${worstCat[0]}」的专题内容，用中文撰写详细指南，标题包含用户常用搜索词。`
+            });
+        }
+
+        // 4. Competitor dominance
+        const googleCount = results.filter(r => r.competitors['Google Ads']).length;
+        const msftCount = cited + mentioned;
+        if (googleCount > msftCount) {
+            suggestions.push({
+                priority: '🟡 中优',
+                title: `Google Ads 被提及次数（${googleCount}）超过微软广告（${msftCount}）`,
+                detail: '豆包在对比类问题中更倾向推荐 Google Ads。建议在官网增加"微软广告 vs Google Ads"对比内容，突出差异化优势（如更低 CPC、独家受众）。'
+            });
+        }
+
+        // 5. Ranking position
+        const primaryCount = results.filter(r => r.ranking.position === 'primary').length;
+        if (primaryCount / total < 0.1 && msftCount > 0) {
+            suggestions.push({
+                priority: '🟡 中优',
+                title: '微软广告很少被作为首选推荐',
+                detail: `虽然被提及${msftCount}次，但仅${primaryCount}次是首位推荐。建议优化官网内容的权威性：增加数据支撑、客户案例、第三方背书，提升在 AI 回答中的推荐优先级。`
+            });
+        }
+
+        // 6. Chinese content
+        const siteZh = results.filter(r => r.sites.includes('about.ads.microsoft.com/zh')).length;
+        if (siteZh === 0 && cited > 0) {
+            suggestions.push({
+                priority: '🟢 建议',
+                title: '中文官网（/zh）从未被引用',
+                detail: '豆包引用的都是英文版或 ads.microsoft.com，从未引用中文站 about.ads.microsoft.com/zh。建议检查中文站的 SEO 和可抓取性（robots.txt、sitemap），确保内容对 AI 爬虫可见。'
+            });
+        }
+
+        // 7. General tip if doing well
+        if (suggestions.length === 0) {
+            suggestions.push({
+                priority: '✅ 良好',
+                title: '当前 GEO 表现良好',
+                detail: '官网引用率和品牌提及率都在健康水平。建议持续监控，保持内容更新频率。'
+            });
+        }
+
+        let html = '';
+        suggestions.forEach(s => {
+            html += `<div style="padding:12px 16px; margin-bottom:8px; background:#f8f9fa; border-radius:8px; border-left:4px solid ${s.priority.includes('🔴') ? '#d63031' : s.priority.includes('🟡') ? '#f39c12' : '#00b894'};">
+                <div style="font-size:13px; font-weight:600; margin-bottom:4px;">${s.priority} ${s.title}</div>
+                <div style="font-size:12px; color:#636e72; line-height:1.5;">${s.detail}</div>
+            </div>`;
+        });
+        document.getElementById('suggestionsSection').innerHTML = html;
     }
 
     // History management
